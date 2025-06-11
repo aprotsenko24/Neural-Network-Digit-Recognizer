@@ -1,43 +1,52 @@
 # 🧠 Neural Network Digit Recognizer (NumPy Only)
 
-This project is a handcrafted neural network for digit recognition, implemented entirely with **NumPy**, without any high-level machine learning libraries like TensorFlow or PyTorch.
+This project implements a digit recognizer neural network entirely from scratch using **NumPy**. No high-level machine learning frameworks like TensorFlow or PyTorch are used—only pure NumPy and low-level matrix operations.
 
 ---
 
 ## 🔍 About the Project
 
-The goal of this project was to deeply understand the core mechanics behind neural networks by manually building and training a model to classify digits from the MNIST dataset.
-
-All core components—including initialization, activation, forward and backward propagation, and optimization—were implemented from scratch using low-level NumPy operations.
+This project was built to gain a deep, hands-on understanding of the internal workings of neural networks. Every core feature—including forward and backward propagation, softmax classification, gradient descent, regularization, and initialization—is manually implemented.
 
 ---
 
 ## 📌 Key Features
 
-- **Weight Initialization**: Xavier and He methods  
-- **Activation Function**: Leaky ReLU (used instead of ReLU to prevent dying neuron issues)  
-- **Backpropagation**: Fully vectorized using multivariable calculus  
-- **Optimization Techniques**:  
-  - L2 Regularization  
-  - Learning Rate Decay  
-  - Early Stopping based on validation cost variance  
-- **Loss Tracking**: Training loss, validation loss, variance, and test accuracy plotted after training
+- **Weight Initialization**:
+  - **He Initialization** (for output layer)
+  - **Xavier Initialization** (for hidden layers)
+- **Activation**:
+  - **Leaky ReLU** to avoid dead neurons
+- **Output**:
+  - **Softmax** layer for classification
+- **Loss Function**:
+  - Cross-entropy with **L2 Regularization**
+- **Optimization Techniques**:
+  - Learning Rate **Decay** (Exponential)
+  - Manual **Gradient Descent**
+- **Training Controls**:
+  - Modular feedforward/backpropagation logic
+  - Custom cost tracking and accuracy evaluation
 
 ---
 
 ## 📊 Performance
 
 - **Dataset**: MNIST (loaded via `torchvision.datasets`)
-- **Current Accuracy**: ~84% on test set
-- **Limitation**: Currently investigating a memory efficiency issue, likely related to buffer reallocation during training
+- **Training Accuracy**: ~88–90%  
+- **Regularization Impact**: L2 Regularization penalizes weight overgrowth, improving generalization
+- **Test Performance**: Final evaluation pending
 
 ---
 
-## 📁 Repository Contents
+## 📁 Project Structure
 
-- `digit_recognizer.py`: Full implementation of the `NN` class and training/testing loops  
-- `README.md`: Project overview (this file)  
-- No external dependencies beyond NumPy, Matplotlib, and Torchvision (used only for dataset loading)
+- `digit_recognizer.py` – Entire training pipeline including:
+  - CNN model construction
+  - Feedforward/backpropagation logic
+  - Cost computation
+  - Visualization of cost decay
+- `README.md` – Project overview and setup instructions
 
 ---
 
