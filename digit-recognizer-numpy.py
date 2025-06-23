@@ -26,16 +26,23 @@ class Layers():
         for index in indecies:
             cls.LAYER_SIZE=np.delete(cls.LAYER_SIZE, index, axis=1)
 class CNNParams():
-    epsilon=1e-12
+    epsilon=1e-8
     alpha=1e-1
     learning_rate=0.04
     decay_rate=1e-5
+    beta=0.9
+    beta_1=0.9
+    beta_2=0.999
     @classmethod
     def __init__(cls):
         cls.weights = np.empty(len(Layers.LAYER_SIZE)-1, dtype=object)
         cls.biases = np.empty(len(Layers.LAYER_SIZE)-1, dtype=object)
         cls.gradients=np.copy(cls.weights)
-        cls.delta=np.copy(cls.biases)
+        cls.delta=np.empty(cls.biases.shape, dtype=object)
+        cls.V_dW=np.copy(cls.weights)
+        cls.V_db=np.copy(cls.biases)
+        cls.S_dW=np.copy(cls.weights)
+        cls.S_db=np.copy(cls.biases)
         for i in range(len(Layers.LAYER_SIZE)-1):
             if i == len(Layers.LAYER_SIZE) - 2:
                 cls.weights[i] = np.random.randn(Layers.LAYER_SIZE[i+1], Layers.LAYER_SIZE[i]) * (1. / (Layers.LAYER_SIZE[i]))
@@ -46,14 +53,18 @@ class CNNParams():
                 cls.gradients[i] = np.zeros((Layers.LAYER_SIZE[i+1], Layers.LAYER_SIZE[i]))
                 # Xavier initialization
             cls.biases[i]=np.full(Layers.LAYER_SIZE[i+1], 0)
-            cls.delta[i]=np.copy(cls.biases)
+            cls.delta[i]=np.copy(cls.biases[i])
+            cls.V_dW[i]=np.copy(cls.weights[i])
+            cls.V_db[i]=np.copy(cls.biases[i])
+            cls.S_dW[i]=np.copy(cls.weights[i])
+            cls.S_db[i]=np.copy(cls.biases[i])
     @classmethod
     def decay_func(cls):
         cls.learning_rate*=np.exp(-cls.decay_rate)
     @classmethod
-    def gradient_descend(cls, gradient, delta):
-        cls.weights-=cls.learning_rate*(gradient/Train.models.__len__())
-        cls.biases-=cls.learning_rate*(delta/Train.models.__len__())
+    def gradient_descend(cls):
+        cls.weights-=cls.learning_rate*cls.gradients
+        cls.biases-=cls.learning_rate*cls.delta
 class Train():
     @classmethod
     def __init__(cls, Models, indecies):
@@ -95,15 +106,26 @@ class CNN():
             else:
                 self.a[i+1]=Leaky_ReLU.func(self.z[i], CNNParams.alpha)
     def backprop(self):
-        CNNParams.gradients=np.zeros_like(CNNParams.gradients)
-        CNNParams.biases=np.zeros_like(CNNParams.biases)
+        delta=np.zeros_like(CNNParams.delta)
+        gradients=np.zeros_like(CNNParams.gradients)
         for i in range(len(Layers.LAYER_SIZE)-1, 0, -1):
             if i==len(Layers.LAYER_SIZE)-1:
-                CNNParams.delta[i-1]=(self.a[i]-Train.answers[self.index])
+                delta[i-1]=(self.a[i]-Train.answers[self.index])
             else:
-                CNNParams.delta[i-1]=np.dot(CNNParams.weights[i].T, CNNParams.delta[i])*Leaky_ReLU.diff(self.z[i-1], CNNParams.alpha)
-            CNNParams.gradients[i-1]=np.outer(CNNParams.delta[i-1],self.a[i-1])+(CNNParams.alpha*CNNParams.weights[i-1])
-        return CNNParams.gradients, CNNParams.delta
+                delta[i-1]=np.dot(CNNParams.weights[i].T, delta[i])*Leaky_ReLU.diff(self.z[i-1], CNNParams.alpha)
+            gradients[i-1]=np.outer(delta[i-1],self.a[i-1])+(CNNParams.alpha*CNNParams.weights[i-1])
+        CNNParams.delta+=(delta/Train.models.__len__())
+        CNNParams.gradients+=(gradients/Train.models.__len__())
+    @staticmethod
+    def Adam(epoch):
+        CNNParams.V_dW=(CNNParams.V_dW*CNNParams.beta_1+(1-CNNParams.beta_1)*CNNParams.gradients)/(1-CNNParams.beta_1**(epoch+1))
+        CNNParams.V_db=(CNNParams.V_db*CNNParams.beta_1+(1-CNNParams.beta_1)*CNNParams.delta)/(1-CNNParams.beta_1**(epoch+1))
+        CNNParams.S_dW=(CNNParams.S_dW*CNNParams.beta_2+(1-CNNParams.beta_2)*np.square(CNNParams.gradients))/(1-CNNParams.beta_2**(epoch+1))
+        CNNParams.S_db=(CNNParams.S_db*CNNParams.beta_2+(1-CNNParams.beta_2)*np.square(CNNParams.delta))/(1-CNNParams.beta_2**(epoch+1))
+        square_root_dW=np.array([np.sqrt(mat) for mat in CNNParams.S_dW], dtype=object)
+        square_root_db=np.array([np.sqrt(mat) for mat in CNNParams.S_db], dtype=object)
+        CNNParams.gradients=CNNParams.V_dW/(square_root_dW+CNNParams.epsilon)
+        CNNParams.delta=CNNParams.V_db/(square_root_db+CNNParams.epsilon)
 class Softmax():
     @staticmethod
     def func(x):
@@ -111,7 +133,6 @@ class Softmax():
             print("Wrong computations")
         e_x = np.exp(x - np.max(x))
         return e_x/(e_x.sum()+CNNParams.epsilon)
-
 class ReLU():
     @staticmethod  
     def func(z):
@@ -134,7 +155,7 @@ class Cost():
         entries_sum=sum(np.sum(w**2) for w in CNNParams.weights)
         return -np.sum(y*np.log(a[-1]+CNNParams.epsilon))+(CNNParams.alpha*entries_sum)
 
-Layers.add(784, 28, 10)
+Layers.add(784, 20, 10)
 CNNParams()
 Val(VALIDATION_MODELS, validation_indecies)
 # print(Val.answers[0], Val.models[0])
@@ -158,14 +179,20 @@ for k in range(BACKPROP):
     vl_cost=0
     weights_storage[k]=CNNParams.weights
     biases_storage[k]=CNNParams.biases
+    CNNParams.gradients=np.zeros_like(CNNParams.gradients)
+    CNNParams.biases=np.zeros_like(CNNParams.biases)
+    CNNParams.V_dW=np.copy(CNNParams.gradients)
+    CNNParams.S_dW=np.copy(CNNParams.gradients)
+    CNNParams.V_db=np.copy(CNNParams.delta)
+    CNNParams.S_db=np.copy(CNNParams.delta)
     for i in range(Train.models.__len__()):
         training_set[i]=CNN(i, Train.models)
         training_set[i].feedforward()
-        gradient, delta = training_set[i].backprop()
-        CNNParams.gradient_descend(gradient, delta)
+        training_set[i].backprop()
         tr_cost+=Cost.func(training_set[i].a, Train.answers[i])
         if np.argmax(training_set[i].a[-1])==np.argmax(Train.answers[i]):
             correct_train+=1
+    # CNN.Adam(k)
     train_cost[k]=tr_cost/Train.models.__len__()
     for v in range(Val.models.__len__()):
         val_set[v]=CNN(v, Val.models)
@@ -175,6 +202,7 @@ for k in range(BACKPROP):
             correct_val+=1
     val_cost[k]=vl_cost/Val.models.__len__()
     varience[k]=abs(val_cost[k]-train_cost[k])
+    CNNParams.gradient_descend()
     CNNParams.decay_func()
 count=0
 for i in range(varience.__len__()):
