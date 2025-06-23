@@ -1,52 +1,59 @@
 # 🧠 Neural Network Digit Recognizer (NumPy Only)
 
-This project implements a digit recognizer neural network entirely from scratch using **NumPy**. No high-level machine learning frameworks like TensorFlow or PyTorch are used—only pure NumPy and low-level matrix operations.
+This project implements a neural network for digit classification using the MNIST dataset. The entire training pipeline — from architecture and forward propagation to backpropagation and optimization — is developed from scratch using only the NumPy library.
 
 ---
 
-## 🔍 About the Project
+## 📌 Overview
 
-This project was built to gain a deep, hands-on understanding of the internal workings of neural networks. Every core feature—including forward and backward propagation, softmax classification, gradient descent, regularization, and initialization—is manually implemented.
+- **Dataset:** MNIST (loaded via `torchvision.datasets`)
+- **Implementation:** Python, NumPy (no high-level ML frameworks)
+- **Accuracy:** ~82–91% on 75 unseen test samples
+- **Architecture:** 784–20–10 fully connected layers
 
 ---
 
-## 📌 Key Features
+## ⚙️ Features
 
-- **Weight Initialization**:
-  - **He Initialization** (for output layer)
-  - **Xavier Initialization** (for hidden layers)
-- **Activation**:
-  - **Leaky ReLU** to avoid dead neurons
-- **Output**:
-  - **Softmax** layer for classification
-- **Loss Function**:
-  - Cross-entropy with **L2 Regularization**
-- **Optimization Techniques**:
-  - Learning Rate **Decay** (Exponential)
-  - Manual **Gradient Descent**
-- **Training Controls**:
-  - Modular feedforward/backpropagation logic
-  - Custom cost tracking and accuracy evaluation
+- **Manual Feedforward & Backpropagation**
+  - Custom matrix-based forward propagation
+  - Hand-coded backward pass using gradient descent with Adam optimizer
+
+- **Optimizations**
+  - **L2 regularization**
+  - **Exponential learning rate decay**
+  - **Early stopping** based on validation cost variance
+  - **Weight & bias checkpointing** for best-performing epoch
+
+- **Initialization**
+  - **Xavier initialization** for hidden layers
+  - **He initialization** for output layer
+
+- **Activation & Output**
+  - **Leaky ReLU** for hidden layers
+  - **Softmax** for final classification
+
+- **Visualization**
+  - Cost curves for training, validation, and test sets
+  - Tracking of variance to identify overfitting
+  - Printout of final accuracies per dataset
 
 ---
 
 ## 📊 Performance
 
-- **Dataset**: MNIST (loaded via `torchvision.datasets`)
-- **Training Accuracy**: ~88–90%  
-- **Regularization Impact**: L2 Regularization penalizes weight overgrowth, improving generalization
-- **Test Performance**: Final evaluation pending
+- Training Accuracy: Varies across epochs; up to ~90%
+- Validation Accuracy: Tracked to prevent overfitting
+- Test Accuracy: ~82–91% on 75 random MNIST digits
 
 ---
 
 ## 📁 Project Structure
 
-- `digit_recognizer.py` – Entire training pipeline including:
-  - CNN model construction
-  - Feedforward/backpropagation logic
-  - Cost computation
-  - Visualization of cost decay
-- `README.md` – Project overview and setup instructions
+digit-recognizer-numpy/
+├── digit_recognizer.py # Full training + testing pipeline with hardcoded neural network
+├── README.md # Project documentation
+└── /data # Automatically created folder by torchvision for MNIST dataset
 
 ---
 
@@ -57,3 +64,7 @@ git clone https://github.com/aprotsenko24/digit-recognizer-numpy.git
 cd digit-recognizer-numpy
 pip install numpy matplotlib torchvision
 python digit_recognizer.py
+
+---
+
+Let me know if you'd like to include example plots (like loss curves) or add a section on limitations and future improvements!
